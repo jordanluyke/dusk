@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "allowSyntheticDefaultImports": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "module": "nodenext",
+        "moduleResolution": "nodenext",
+        "noImplicitAny": false,
+        "noImplicitReturns": true,
+        "outDir": "target",
+        "resolveJsonModule": true,
+        "rootDir": "src",
+        "sourceMap": true,
+        "strictNullChecks": false,
+        "target": "esnext"
+    }
+}
