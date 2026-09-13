@@ -4,7 +4,7 @@ import { HttpClient, HttpMethod } from '../util/http-client.js'
 
 @singleton()
 export class PushoverClient {
-    private readonly baseUrl = 'https://api.pushover.net/1/'
+    private readonly baseUrl = 'https://api.pushover.net/1'
 
     constructor(private config: Config, private httpClient: HttpClient) {}
 
