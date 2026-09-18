@@ -1,6 +1,7 @@
 import 'reflect-metadata'
 import { container } from 'tsyringe'
 import { PushoverClient } from './notification/pushover-client.js'
+import { retryUntil } from './util/retry-util.js'
 import { sleep, sleepUntil } from './util/sleep-util.js'
 import { SunUtil } from './util/sun-util.js'
 import { TimeUnit } from './util/time-unit.js'
@@ -18,7 +19,9 @@ async function main() {
             await sleepUntil(notifyAt)
 
             const message = `Sunset in one hour (${sunUtil.format(sunset)})`
-            await pushoverClient.sendMessage(message)
+            // Retry this fire until sunset. Re-calling getNextNotifyAt() after a failed send
+            // would see notifyAt in the past and skip today's notification.
+            await retryUntil(() => pushoverClient.sendMessage(message), sunset)
             console.log('Sent:', message)
         } catch (err) {
             console.error(err)
