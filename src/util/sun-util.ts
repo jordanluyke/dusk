@@ -18,8 +18,11 @@ export class SunUtil {
         let day = this.calendarDay(now)
         for (let i = 0; i < 3; i++) {
             const sunset = SunCalc.getTimes(day, this.config.latitude, this.config.longitude).sunset
-            const notifyAt = new Date(sunset.getTime() - TimeUnit.HOURS.toMillis(1))
-            if (notifyAt.getTime() > now.getTime()) {
+            // Key off sunset, not notifyAt: a restart (or retry) between notify time and
+            // sunset must still deliver today's fire. suncalc v2 returns null when the
+            // sun does not set.
+            if (sunset && sunset.getTime() > now.getTime()) {
+                const notifyAt = new Date(sunset.getTime() - TimeUnit.HOURS.toMillis(1))
                 return { sunset, notifyAt }
             }
             day = new Date(day.getTime() + TimeUnit.DAYS.toMillis(1))
