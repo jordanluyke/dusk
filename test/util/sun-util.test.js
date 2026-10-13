@@ -27,15 +27,34 @@ describe('SunUtil', () => {
         expect(notifyAt.getTime()).toBeGreaterThan(now.getTime())
     })
 
-    test('getNextNotifyAt rolls to the next day after notify time', () => {
+    test('getNextNotifyAt still returns today between notify time and sunset', () => {
         const morning = new Date('2026-08-05T12:00:00Z')
-        const { notifyAt: todayNotify } = sunUtil.getNextNotifyAt(morning)
+        const { sunset, notifyAt } = sunUtil.getNextNotifyAt(morning)
 
-        const afterNotify = new Date(todayNotify.getTime() + TimeUnit.MINUTES.toMillis(1))
-        const { notifyAt: nextNotify } = sunUtil.getNextNotifyAt(afterNotify)
+        const inWindow = new Date(notifyAt.getTime() + TimeUnit.MINUTES.toMillis(1))
+        const again = sunUtil.getNextNotifyAt(inWindow)
+
+        expect(inWindow.getTime()).toBeLessThan(sunset.getTime())
+        expect(again.notifyAt.getTime()).toBe(notifyAt.getTime())
+        expect(again.sunset.getTime()).toBe(sunset.getTime())
+    })
+
+    test('getNextNotifyAt rolls to the next day after sunset', () => {
+        const morning = new Date('2026-08-05T12:00:00Z')
+        const { sunset, notifyAt: todayNotify } = sunUtil.getNextNotifyAt(morning)
+
+        const afterSunset = new Date(sunset.getTime() + TimeUnit.MINUTES.toMillis(1))
+        const { notifyAt: nextNotify } = sunUtil.getNextNotifyAt(afterSunset)
 
         expect(nextNotify.getTime()).toBeGreaterThan(todayNotify.getTime())
         expect(nextNotify.getTime() - todayNotify.getTime()).toBeGreaterThan(TimeUnit.HOURS.toMillis(20))
+    })
+
+    test('getNextNotifyAt throws when the sun does not set for several days', () => {
+        const arctic = createSunUtil({ latitude: 80, longitude: 20, timezone: 'UTC' })
+        expect(() => arctic.getNextNotifyAt(new Date('2026-06-21T12:00:00Z'))).toThrow(
+            'Failed to resolve next sunset notify time'
+        )
     })
 
     test('getNextNotifyAt throws when coordinates are missing', () => {

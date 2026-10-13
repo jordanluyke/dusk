@@ -19,10 +19,11 @@ async function main() {
             await sleepUntil(notifyAt)
 
             const message = `Sunset in one hour (${sunUtil.format(sunset)})`
-            // Retry this fire until sunset. Re-calling getNextNotifyAt() after a failed send
-            // would see notifyAt in the past and skip today's notification.
             await retryUntil(() => pushoverClient.sendMessage(message), sunset)
             console.log('Sent:', message)
+            // getNextNotifyAt() keeps returning today until sunset passes. Sleep past
+            // this sunset so the next iteration cannot send the same notification again.
+            await sleepUntil(new Date(sunset.getTime() + TimeUnit.SECONDS.toMillis(1)))
         } catch (err) {
             console.error(err)
             await sleep(TimeUnit.MINUTES.toMillis(1))
