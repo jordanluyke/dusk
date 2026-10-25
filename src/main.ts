@@ -1,7 +1,7 @@
 import 'reflect-metadata'
 import { container } from 'tsyringe'
 import { PushoverClient } from './notification/pushover-client.js'
-import { retryUntil } from './util/retry-util.js'
+import { logError, retryUntil } from './util/retry-util.js'
 import { sleep, sleepUntil } from './util/sleep-util.js'
 import { SunUtil } from './util/sun-util.js'
 import { TimeUnit } from './util/time-unit.js'
@@ -25,7 +25,7 @@ async function main() {
             // this sunset so the next iteration cannot send the same notification again.
             await sleepUntil(new Date(sunset.getTime() + TimeUnit.SECONDS.toMillis(1)))
         } catch (err) {
-            console.error(err)
+            logError(err)
             await sleep(TimeUnit.MINUTES.toMillis(1))
         }
     }

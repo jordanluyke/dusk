@@ -60,6 +60,33 @@ describe('retryUntil', () => {
         ).rejects.toThrow('pushover down')
     })
 
+    test('logs the error stack without request secrets', async () => {
+        const logged = []
+        console.error = (...args) => {
+            logged.push(args.map(String).join(' '))
+        }
+        const secret = 'TOKENSECRET456'
+        let now = 0
+        await expect(
+            retryUntil(
+                async () => {
+                    const err = new Error('Request failed with status code 500')
+                    err.config = { data: JSON.stringify({ token: secret, user: 'USERKEY123' }) }
+                    throw err
+                },
+                new Date(1000),
+                async () => {
+                    now = 1000
+                },
+                () => now
+            )
+        ).rejects.toThrow('Request failed with status code 500')
+        const text = logged.join('\n')
+        expect(text).toContain('Request failed with status code 500')
+        expect(text).not.toContain(secret)
+        expect(text).not.toContain('USERKEY123')
+    })
+
     test('rethrows once a later attempt misses the deadline', async () => {
         let now = 0
         let attempts = 0
