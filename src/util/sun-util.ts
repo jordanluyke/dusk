@@ -21,13 +21,17 @@ export class SunUtil {
             // Key off sunset, not notifyAt: a restart (or retry) between notify time and
             // sunset must still deliver today's fire. suncalc v2 returns null when the
             // sun does not set.
-            if (sunset && sunset.getTime() > now.getTime()) {
+            if (sunset && this.isBeforeSunset(sunset, now)) {
                 const notifyAt = new Date(sunset.getTime() - TimeUnit.HOURS.toMillis(1))
                 return { sunset, notifyAt }
             }
             day = new Date(day.getTime() + TimeUnit.DAYS.toMillis(1))
         }
         throw new Error('Failed to resolve next sunset notify time')
+    }
+
+    public isBeforeSunset(sunset: Date, now = new Date()): boolean {
+        return sunset.getTime() > now.getTime()
     }
 
     public format(date: Date): string {

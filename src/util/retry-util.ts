@@ -17,6 +17,7 @@ export async function retryUntil(
     wait: (ms: number) => Promise<void> = sleep,
     now: () => number = Date.now
 ): Promise<void> {
+    const retryDelay = TimeUnit.MINUTES.toMillis(1)
     while (true) {
         try {
             await fn()
@@ -26,7 +27,13 @@ export async function retryUntil(
                 throw err
             }
             logError(err)
-            await wait(TimeUnit.MINUTES.toMillis(1))
+            await wait(retryDelay)
+            // A suspended host can wake long after this wait was supposed to end.
+            // Another attempt would deliver the hour-before alert after sunset.
+            // A timer that only runs slightly long still gets one more try.
+            if (now() > deadline.getTime() + retryDelay) {
+                throw err
+            }
         }
     }
 }

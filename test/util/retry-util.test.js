@@ -87,6 +87,44 @@ describe('retryUntil', () => {
         expect(text).not.toContain('USERKEY123')
     })
 
+    test('still tries once more when the wait only slightly passes the deadline', async () => {
+        let now = 0
+        let attempts = 0
+        await expect(
+            retryUntil(
+                async () => {
+                    attempts++
+                    throw new Error('still down')
+                },
+                new Date(1000),
+                async () => {
+                    now = 1000 + TimeUnit.SECONDS.toMillis(5)
+                },
+                () => now
+            )
+        ).rejects.toThrow('still down')
+        expect(attempts).toBe(2)
+    })
+
+    test('does not try again when the wait runs far past the deadline', async () => {
+        let now = 0
+        let attempts = 0
+        await expect(
+            retryUntil(
+                async () => {
+                    attempts++
+                    throw new Error('still down')
+                },
+                new Date(1000),
+                async () => {
+                    now = 1000 + TimeUnit.MINUTES.toMillis(1) + 1
+                },
+                () => now
+            )
+        ).rejects.toThrow('still down')
+        expect(attempts).toBe(1)
+    })
+
     test('rethrows once a later attempt misses the deadline', async () => {
         let now = 0
         let attempts = 0

@@ -57,6 +57,14 @@ describe('SunUtil', () => {
         )
     })
 
+    test('isBeforeSunset is false at and after sunset', () => {
+        const sunset = new Date('2026-08-05T02:54:00Z')
+        const morningAfter = new Date(sunset.getTime() + TimeUnit.HOURS.toMillis(8))
+        expect(sunUtil.isBeforeSunset(sunset, new Date(sunset.getTime() - 1))).toBe(true)
+        expect(sunUtil.isBeforeSunset(sunset, sunset)).toBe(false)
+        expect(sunUtil.isBeforeSunset(sunset, morningAfter)).toBe(false)
+    })
+
     test('getNextNotifyAt throws when coordinates are missing', () => {
         const broken = createSunUtil({ latitude: NaN, longitude: NaN })
         expect(() => broken.getNextNotifyAt()).toThrow('LATITUDE and LONGITUDE')
