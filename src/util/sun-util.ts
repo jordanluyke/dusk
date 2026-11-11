@@ -15,19 +15,30 @@ export class SunUtil {
 
     public getNextNotifyAt(now = new Date()): { sunset: Date; notifyAt: Date } {
         this.assertCoordinates()
-        let day = this.calendarDay(now)
-        for (let i = 0; i < 3; i++) {
-            const sunset = SunCalc.getTimes(day, this.config.latitude, this.config.longitude).sunset
-            // Key off sunset, not notifyAt: a restart (or retry) between notify time and
-            // sunset must still deliver today's fire. suncalc v2 returns null when the
-            // sun does not set.
-            if (sunset && this.isBeforeSunset(sunset, now)) {
-                const notifyAt = new Date(sunset.getTime() - TimeUnit.HOURS.toMillis(1))
-                return { sunset, notifyAt }
+        // Key off sunset, not notifyAt: a restart between notify time and sunset must
+        // still deliver today's fire. suncalc v2 returns null when the sun does not set,
+        // and it keys each sunset to the UTC date of solar noon at this longitude, not
+        // the civil date. Anchoring on the civil date skips the upcoming sunset from
+        // local midnight onward in zones ahead of their longitude (Samoa, Tonga, the
+        // Chatham Islands, Kiritimati), so a start or restart misses that day's alert.
+        const start = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1, 12)
+        let sunset: Date = null
+        for (let i = 0; i < 4; i++) {
+            const day = new Date(start + TimeUnit.DAYS.toMillis(i))
+            const candidate = SunCalc.getTimes(day, this.config.latitude, this.config.longitude)
+                .sunset
+            if (!candidate || !this.isBeforeSunset(candidate, now)) {
+                continue
             }
-            day = new Date(day.getTime() + TimeUnit.DAYS.toMillis(1))
+            if (!sunset || candidate.getTime() < sunset.getTime()) {
+                sunset = candidate
+            }
         }
-        throw new Error('Failed to resolve next sunset notify time')
+        if (!sunset) {
+            throw new Error('Failed to resolve next sunset notify time')
+        }
+        const notifyAt = new Date(sunset.getTime() - TimeUnit.HOURS.toMillis(1))
+        return { sunset, notifyAt }
     }
 
     public isBeforeSunset(sunset: Date, now = new Date()): boolean {
