@@ -111,6 +111,55 @@ describe('SunUtil', () => {
         )
     })
 
+    test('getNextNotifyAt keeps the last real sunset before polar day', () => {
+        // Utqiagvik, an hour before the last sunset of spring 2026.
+        const arctic = createSunUtil({
+            latitude: 71.29,
+            longitude: -156.79,
+            timezone: 'America/Anchorage',
+        })
+        const now = new Date('2026-05-10T08:00:00Z')
+        const { sunset, notifyAt } = arctic.getNextNotifyAt(now)
+        expect(notifyAt.getTime()).toBe(sunset.getTime() - TimeUnit.HOURS.toMillis(1))
+        expect(sunset.getTime()).toBeGreaterThan(now.getTime())
+        expect(sunset.getTime() - now.getTime()).toBeLessThan(TimeUnit.HOURS.toMillis(3))
+    })
+
+    test('getNextNotifyAt does not invent a sunset once the sun stays up', () => {
+        // Same place, after that sunset. The sun does not set again until August.
+        // A bad solve here is 2026-05-11 22:08 UTC, with the sun still ~37° up.
+        const arctic = createSunUtil({
+            latitude: 71.29,
+            longitude: -156.79,
+            timezone: 'America/Anchorage',
+        })
+        expect(() => arctic.getNextNotifyAt(new Date('2026-05-10T12:00:00Z'))).toThrow(
+            'Failed to resolve next sunset notify time'
+        )
+    })
+
+    test('getNextNotifyAt does not skip the first sunset after polar day', () => {
+        // Tromsø on 2026-07-24 12:00 UTC. Sunset is 2026-07-25 22:37 UTC,
+        // which is 00:37 on July 26 in Oslo. Skipping it waits until July 27.
+        const tromso = createSunUtil({
+            latitude: 69.65,
+            longitude: 18.96,
+            timezone: 'Europe/Oslo',
+        })
+        const now = new Date('2026-07-24T12:00:00Z')
+        const { sunset, notifyAt } = tromso.getNextNotifyAt(now)
+        expect(notifyAt.getTime()).toBe(sunset.getTime() - TimeUnit.HOURS.toMillis(1))
+        expect(sunset.getTime() - now.getTime()).toBeGreaterThan(TimeUnit.HOURS.toMillis(20))
+        expect(sunset.getTime() - now.getTime()).toBeLessThan(TimeUnit.HOURS.toMillis(40))
+        const localDay = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Europe/Oslo',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).format(sunset)
+        expect(localDay).toBe('2026-07-26')
+    })
+
     test('isBeforeSunset is false at and after sunset', () => {
         const sunset = new Date('2026-08-05T02:54:00Z')
         const morningAfter = new Date(sunset.getTime() + TimeUnit.HOURS.toMillis(8))
