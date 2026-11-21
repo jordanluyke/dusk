@@ -20,14 +20,18 @@ async function main() {
 
             // sleepUntil returns as soon as notifyAt is behind the clock. That also
             // happens when the host was suspended, or the clock stepped forward, and
-            // sunset has already passed. Sending then claims the sun sets in an hour.
+            // sunset has already passed.
             if (!sunUtil.isBeforeSunset(sunset)) {
                 console.log('Skipped notify; sunset already passed:', sunUtil.format(sunset))
                 continue
             }
 
-            const message = `Sunset in one hour (${sunUtil.format(sunset)})`
-            await retryUntil(() => pushoverClient.sendMessage(message), sunset)
+            // Rebuild on each attempt so a retry does not keep the earlier lead.
+            let message: string
+            await retryUntil(async () => {
+                message = sunUtil.notifyMessage(sunset)
+                await pushoverClient.sendMessage(message)
+            }, sunset)
             console.log('Sent:', message)
             // getNextNotifyAt() keeps returning today until sunset passes. Sleep past
             // this sunset so the next iteration cannot send the same notification again.

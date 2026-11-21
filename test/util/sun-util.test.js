@@ -160,6 +160,49 @@ describe('SunUtil', () => {
         expect(localDay).toBe('2026-07-26')
     })
 
+    test('notifyMessage says one hour when the lead rounds to 60 minutes', () => {
+        const sunset = new Date('2026-11-18T00:46:00Z')
+        const onTime = new Date(sunset.getTime() - TimeUnit.HOURS.toMillis(1))
+        const barelyLate = new Date(onTime.getTime() + TimeUnit.SECONDS.toMillis(20))
+        const expected = `Sunset in one hour (${sunUtil.format(sunset)})`
+        expect(sunUtil.notifyMessage(sunset, onTime)).toBe(expected)
+        expect(sunUtil.notifyMessage(sunset, barelyLate)).toBe(expected)
+    })
+
+    test('notifyMessage states the remaining minutes inside the hour', () => {
+        const sunset = new Date('2026-11-18T00:46:00Z')
+        const now = new Date(sunset.getTime() - TimeUnit.MINUTES.toMillis(39))
+        expect(sunUtil.notifyMessage(sunset, now)).toBe(
+            `Sunset in 39 minutes (${sunUtil.format(sunset)})`
+        )
+    })
+
+    test('notifyMessage rounds the lead to the nearest minute', () => {
+        const sunset = new Date('2026-11-18T00:46:00Z')
+        const now = new Date(
+            sunset.getTime() - TimeUnit.MINUTES.toMillis(38) - TimeUnit.SECONDS.toMillis(20)
+        )
+        expect(sunUtil.notifyMessage(sunset, now)).toBe(
+            `Sunset in 38 minutes (${sunUtil.format(sunset)})`
+        )
+    })
+
+    test('notifyMessage says 1 minute through the last minute', () => {
+        const sunset = new Date('2026-11-18T00:46:00Z')
+        const now = new Date(sunset.getTime() - TimeUnit.SECONDS.toMillis(50))
+        expect(sunUtil.notifyMessage(sunset, now)).toBe(
+            `Sunset in 1 minute (${sunUtil.format(sunset)})`
+        )
+    })
+
+    test('notifyMessage says less than a minute under 30 seconds', () => {
+        const sunset = new Date('2026-11-18T00:46:00Z')
+        const now = new Date(sunset.getTime() - TimeUnit.SECONDS.toMillis(20))
+        expect(sunUtil.notifyMessage(sunset, now)).toBe(
+            `Sunset in less than a minute (${sunUtil.format(sunset)})`
+        )
+    })
+
     test('isBeforeSunset is false at and after sunset', () => {
         const sunset = new Date('2026-08-05T02:54:00Z')
         const morningAfter = new Date(sunset.getTime() + TimeUnit.HOURS.toMillis(8))

@@ -53,6 +53,25 @@ export class SunUtil {
         })
     }
 
+    public notifyMessage(sunset: Date, now = new Date()): string {
+        return `Sunset in ${this.leadPhrase(sunset, now)} (${this.format(sunset)})`
+    }
+
+    private leadPhrase(sunset: Date, now: Date): string {
+        const minutes = Math.round(
+            (sunset.getTime() - now.getTime()) / TimeUnit.MINUTES.toMillis(1)
+        )
+        // The scheduled fire is one hour out. A few seconds of timer delay still
+        // rounds to 60, so the usual alert keeps its wording.
+        if (minutes === 60) {
+            return 'one hour'
+        }
+        if (minutes <= 0) {
+            return 'less than a minute'
+        }
+        return minutes === 1 ? '1 minute' : `${minutes} minutes`
+    }
+
     private calendarDay(date: Date): Date {
         // en-CA formats as YYYY-MM-DD
         const ymd = date.toLocaleDateString('en-CA', { timeZone: this.config.timezone })
